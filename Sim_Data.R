@@ -19,9 +19,25 @@ Sim_Data <- function(m, p_null, div_way = c("c", "i", "d"), L, B = 20000, n = 1)
 
 
 
-Sim_Data_Dep <- function(m, p_null, L, p=0.1, B=20000) {
- Sigma <- matrix(rep(p,m^2), nrow= m)
+Sim_Data_Dep <- function(m, p_null, L, rho=0.1, B=20000) {
+    Sigma <- matrix(rep(rho,m^2), nrow= m)
+    diag(Sigma) <- rep(1, m)
+    e <- eigen(Sigma)
+    sqSigma <- e$vectors %*% diag(sqrt(e$values)) %*% t(e$vectors)
+    m_null <- p_null * m
+    m_alt <- m - m_null
+    truth <- c(rep(0, m_alt), rep(1, m_null))
+    truths <- matrix(rep(truth, B), nrow= B, byrow = TRUE)
+    
 
+    mu_alt <- L * rep( c(1/4, 1/2, 3/4, 1), split_n(m_alt, 'c'))
+    mu_test <- c(mu_alt, rep(0, m_null))
+    mu_mat <- matrix(mu_test, nrow = B, ncol = m, byrow = TRUE)
+    Z_stats <- mu_mat + matrix( rnorm( B * m, 0, sd= 1), nrow= B) %*% sqSigma
+
+    p_vals <- 2 * pnorm(- abs(Z_stats))
+
+    return(list(p_vals = p_vals, truths = truths))
 }
 
 
@@ -75,13 +91,13 @@ for ( m in total_tests ){
     }
   }
 }
+set.seed(5400)
+for(rho in c(0.1, 0.3, 0.5)) {
+  lname <- paste0('dept_data_rho_', rho)
+  assign(lname, Sim_Data_Dep(m=16, p_null = 0.5, L = 5, rho = rho))
+  save(list = lname , file = paste0("Data/", lname, ".RData"))
+}
 
-# rm( col, l, L, m , p, pnull, Sim_Data, Sim_Data_Dep, split_n, total_tests, w, ways)
-
-# for (i in m){
-#     assign(paste0('l',i), Sim_Data(i, 0.5, 'c', L= 5))
-
-# }
 
 
 # save.image(file = "SimulationData.RData")
@@ -90,17 +106,18 @@ for ( m in total_tests ){
 # Find all objects matching the m-l-c-p pattern (separator can be _ or -)
 objs <- ls(pattern = "^m[^_-]+[_-]l[^_-]+[_-]c[^_-]+[_-]p")
 
-# Extract the "m" prefix of each name
-m_ids <- unique(sub("[_-].*$", "", objs))
+# Extract the "c-p" part: everything from the c-component onward
+cp_ids <- sub("^m[^_-]+[_-]l[^_-]+[_-](c[^_-]+[_-]p.*)$", "\\1", objs)
 
-for (m in m_ids) {
-  # All objects belonging to this m
-  nms <- grep(paste0("^", m, "[_-]"), objs, value = TRUE)
+for (cp in unique(cp_ids)) {
+  # All objects sharing this c-p combination
+  nms <- objs[cp_ids == cp]
 
   # Named list: names are the full object names (m-l-c-p)
   lst <- mget(nms)
 
-  # Name the list after m, then save it
-  assign(m, lst)
-  save(list = m, file = paste0(m, ".RData"))
+  # Use a syntactically safe name for the saved object
+  list_name <- gsub("-", "_", cp)
+  assign(list_name, lst)
+  save(list = list_name, file = paste0("Data/", list_name, ".RData"))
 }
