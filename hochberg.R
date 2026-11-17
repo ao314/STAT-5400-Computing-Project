@@ -56,3 +56,42 @@ hochberg <- function(p_vals, truths, alpha= 0.05) {
   return(out)
   
 }
+
+
+
+
+hochbergP <- function(p_vals, truths, alpha= 0.05) {
+  idx <- order(p_vals) # Get sorting order
+  p_vals <- p_vals[idx] # sort p-values
+  truths <- as.logical(truths[idx]) # sort hypotheses
+  
+  m <- length(p_vals)
+
+  thresholds <- alpha / (m - seq_len(m) + 1) # Hochberg threshold: alpha / (m - k +1)
+  passed <- which(p_vals<= thresholds)
+  
+  if (length(passed) == 0 ) {
+    k <- 0
+  } else {
+    k <- max(passed)
+  }
+  
+  rejected <- seq_len(m) <= k
+  
+  null_rej <- sum(truths & rejected)
+  null_act <- sum(truths & !rejected)
+  alt_rej <- sum(!truths & rejected)
+  alt_act <- sum(!truths & !rejected)
+  
+  num_alt_hyp <- sum(!truths)
+  
+  if (num_alt_hyp != 0) {
+    pwr <- alt_rej / num_alt_hyp
+  } else {
+    pwr <- NA_real_
+  }
+  
+
+  return(pwr)
+  
+}
