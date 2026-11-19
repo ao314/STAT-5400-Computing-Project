@@ -22,25 +22,25 @@ for(rho in c(0.1, 0.3, 0.5)) {
 }
 
 
-for(func in c("BY", "hochberg", "bonferonni", "FDR"))
+for(func in c("BY", "hochberg", "bonferroni", "FDR"))
 {
+    source(paste0(func, ".R"))
     for (let in c('a','b','c') )
         {
         for(pnull in c(0, 0.25, 0.5, 0.75))
             {
             lname <-paste0('c', let, '_p', pnull )
-            source(paste0(func, ".R"))
             assign(paste0(func, "_c", let, "_p", pnull),lapply(get(lname), function(pair) {
             A <- pair$p_vals
             B <- pair$truths
             mean(vapply(seq_len(nrow(A)),
-                        function(i) do.call(paste0(func, "P"), list(A[i, ], B[i, ])), numeric(1)))
+                        function(i) do.call(paste0(func, "P"), list(A[i, ], B[i, ])), numeric(1)), na.rm = TRUE)
                 }))
             }
         }
 }
 
-for(func in c("BY", "hochberg", "bonferonni", "FDR"))
+for(func in c("BY", "hochberg", "bonferroni", "FDR"))
 {
     for(let in c('a','b','c'))
     {
@@ -60,21 +60,21 @@ for(let in c('a', 'b', 'c'))
 {
     for(pnull in c(0, 0.25, 0.5, 0.75)) 
     {
-        lname <- paste0("pvals_c", let, "_p", pnull)
+        lname <- paste0("graph_c", let, "_p", pnull)
         assign(lname, list(
             BY = get(paste0("BY_c", let, "_p", pnull)),
             hochberg = get(paste0("hochberg_c", let, "_p", pnull)),
-            bonferonni = get(paste0("bonferonni_c", let, "_p", pnull)),
+            bonferroni = get(paste0("bonferroni_c", let, "_p", pnull)),
             FDR = get(paste0("FDR_c", let, "_p", pnull))
         ))
-        save(list = lname, file = paste0("Data/", lname, ".RData"))
+        save(list = lname, file = paste0("Data/Graphs/", lname, ".RData"))
     }
 }
 
 
 # Dept Data
 
-methods <- c("BY", "hochberg", "bonferonni", "FDR")   # must match your .R file names and <method>P functions
+methods <- c("BY", "hochberg", "bonferroni", "FDR")   # must match your .R file names and <method>P functions
 
 # source each method file once, not inside every iteration
 for (meth in methods) source(paste0(meth, ".R"))
@@ -96,7 +96,7 @@ for (rho in c(0.1, 0.3, 0.5)) {
       B <- pair$truths
       mean(vapply(seq_len(nrow(A)),
                   function(i) fn(A[i, ], B[i, ]),
-                  numeric(1)))
+                  numeric(1)), na.rm = TRUE)
     })
 
     # average every pair of consecutive numbers, named after the first of each pair
@@ -108,7 +108,7 @@ for (rho in c(0.1, 0.3, 0.5)) {
   })
   names(res) <- methods
 
-  lname <- paste0("pvals_dep_rho_", rho)
+  lname <- paste0("graphs_dep_rho_", rho)
   assign(lname, res)
-  save(list = lname, file = paste0("Data/", lname, ".RData"))
+  save(list = lname, file = paste0("Data/Graphs/", lname, ".RData"))
 }

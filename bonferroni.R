@@ -15,7 +15,7 @@
 #Q <- V/(V+S) (proportion of rejected null hypotheses that are erroneously rejected)
   #Q <- 0 if V+S=0
 
-bon_method <- function(pval, TRUEnull, a=0.05) {
+bonferroni <- function(pval, TRUEnull, a=0.05) {
   m  <- length(pval)               #hypotheses
   m0 <- sum(TRUEnull)              #true null hypotheses
   alpha <- a/m                     #adjusted alpha
@@ -24,8 +24,8 @@ bon_method <- function(pval, TRUEnull, a=0.05) {
   U <- sum(TRUEnull & !reject)     #true null, non-significant
   S <- sum(!TRUEnull & reject)     #non-true null, significant
   T <- sum(!TRUEnull & !reject)    #non-true null , non-significant
-  power <- S/(m-m0)                #proportion of false null hypotheses, correctly rejected
-  results <- data.frame(U=U, T=T, V=V, S=S, power=power)
+  power <- if(m-m0 <=0) NA_real_ else S/(m-m0)                #proportion of false null hypotheses, correctly rejected
+  results <- data.frame(null_act=U, null_rej=V, alt_act=T, alt_rej=S, power=power)
   return(results)
 }
 
@@ -41,3 +41,16 @@ bon_method <- function(pval, TRUEnull, a=0.05) {
   
   
   
+bonferroniP <- function(pval, TRUEnull, a=0.05) {
+  m  <- length(pval)               #hypotheses
+  m0 <- sum(TRUEnull)              #true null hypotheses
+  alpha <- a/m                     #adjusted alpha
+  reject <- pval <= alpha          #rejected hypotheses
+  V <- sum(TRUEnull & reject)      #true null , significant
+  U <- sum(TRUEnull & !reject)     #true null, non-significant
+  S <- sum(!TRUEnull & reject)     #non-true null, significant
+  T <- sum(!TRUEnull & !reject)    #non-true null , non-significant
+  power <- S/(m-m0)                #proportion of false null hypotheses, correctly rejected
+  return(power)
+}
+
